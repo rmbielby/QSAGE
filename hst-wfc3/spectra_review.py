@@ -16,13 +16,38 @@ import glob
 from scipy.ndimage.filters import gaussian_filter1d
 import seaborn as sns
 from matplotlib.patches import Ellipse
-import os
+import os,sys
 import idlsave
 from shutil import copyfile
+from optparse import OptionParser
+
+parser = OptionParser()
+
+parser.add_option('-q','--quasar',dest='Quasar',
+       help='quasar/field name',type='string',
+       default='HB890232-042')
+parser.add_option('-w','--wfc3dir',dest='wfc3dir',
+       help='quasar/field name',type='string',
+       default=None)
+parser.add_option('-p','--phzfile',dest='phzfile',
+       help='Photo-z file',type='string',
+       default=None)
+parser.add_option('-m','--musefile',dest='musefile',
+       help='MUSE MARZ output file',type='string',
+       default=None)
+
+try:
+    options,args = parser.parse_args(sys.argv[1:])
+except:
+    print "Error ... check usage with -h ";
+    sys.exit(1)
+
 
 # Set field Parameters
-field   = 'HB890232-042'
+field   = options.Quasar
 homedir = os.getenv("HOME")
+
+
 
 # Set plit Parameters
 xtitle   = r'Wavelength ($\AA$)'
@@ -42,17 +67,22 @@ keyname  = ['[OII]','D4000',r'H$\delta$',r'H$\gamma$',r'H$\beta$','[OIII]',r'H$\
 
 
 # Read in F140W image & catalogue
-fitsfile = '{1}/Dropbox/QSAGEdata/hst-wfc3/HB890232-042/MasterCatalogs/{0}_F140W.fits'.format(field,homedir)
+fitsfile = '{1}/Dropbox/QSAGEdata/hst-wfc3/{0}/MasterCatalogs/{0}_F140W.fits'.format(field,homedir)
 print fitsfile
 f140w_hdulist = fits.open(fitsfile)
 stack = f140w_hdulist[0].data
-catfile = '{1}/Dropbox/QSAGEdata/hst-wfc3/HB890232-042/MasterCatalogs/{0}_F140W_v2.cat'.format(field,homedir)
+catfile = '{1}/Dropbox/QSAGEdata/hst-wfc3/{0}/MasterCatalogs/{0}_F140W_v2.cat'.format(field,homedir)
 print catfile
 gid,gx,gy,gra,gdec,gtheta,gaimage,gbimage,gmag = np.genfromtxt(catfile,
     unpack=True,usecols=(0,1,2,3,4,7,8,9,18))
 
 # Check for MUSE data
-mzfile = '{1}/Dropbox/QSAGE/data/vlt-muse/{0}/linecombine/COMBINED_IMAGE_F140W_marz_RMB.mz'.format(field,homedir)
+if options.musefile:
+    mzfile = options.musefile
+else:
+    mzfile = '{1}/Dropbox/QSAGE/data/vlt-muse/{0}/linecombine/COMBINED_IMAGE_F140W_marz_RMB.mz'.format(field,homedir)
+
+
 if os.path.isfile(mzfile):
     data    = np.genfromtxt(mzfile,unpack=True,delimiter=',',dtype=None)
     mus_sel = np.where((data['f13'] >= -10.) & (data['f12'] >= -10.0) & (data['f12'] <= 16.))[0]
@@ -63,7 +93,11 @@ if os.path.isfile(mzfile):
     mqop     = data['f13'][mus_sel]
 
 # Check for photo-z's
-phzfile = '{1}/Dropbox/QSAGE/data/hst-wfc3/{0}/MatchedData/{0}_CFHTLS_ugrizF140WF160W_redshifts_1802.cat'.format(field,homedir)
+if options.phzfile:
+    phzfile = options.phzfile
+else:
+    phzfile = '{1}/Dropbox/QSAGE/data/hst-wfc3/{0}/MatchedData/{0}_CFHTLS_ugrizF140WF160W_redshifts_1802.cat'.format(field,homedir)
+
 if os.path.isfile(phzfile):
     phzdata  = np.genfromtxt(phzfile,unpack=True,dtype=None)
     phzid    = phzdata['f0']
