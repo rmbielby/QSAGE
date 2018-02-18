@@ -22,7 +22,7 @@ from shutil import copyfile
 
 # Set field Parameters
 field   = 'HB890232-042'
-homedir = '/home/rich/'
+homedir = os.getenv("HOME")
 
 # Set plit Parameters
 xtitle   = r'Wavelength ($\AA$)'
